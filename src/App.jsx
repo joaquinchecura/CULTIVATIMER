@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import { AppProvider } from '@/lib/AppContext';
 import { useAuth } from '@/lib/AuthContext';
+import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -16,6 +17,12 @@ const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
+
+const LoginPage = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-b from-white to-slate-50">
+    <SignIn routing="hash" />
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth } = useAuth();
@@ -29,33 +36,40 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
+    <>
+      <SignedOut>
+        <LoginPage />
+      </SignedOut>
+      <SignedIn>
+        <Routes>
+          <Route path="/" element={
+            <LayoutWrapper currentPageName={mainPageKey}>
+              <MainPage />
             </LayoutWrapper>
-          }
-        />
-      ))}
-      <Route
-        path="/settings"
-        element={
-          <LayoutWrapper currentPageName="Training">
-            <Pages.Training />
-          </LayoutWrapper>
-        }
-      />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+          } />
+          {Object.entries(Pages).map(([path, Page]) => (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={
+                <LayoutWrapper currentPageName={path}>
+                  <Page />
+                </LayoutWrapper>
+              }
+            />
+          ))}
+          <Route
+            path="/settings"
+            element={
+              <LayoutWrapper currentPageName="Training">
+                <Pages.Training />
+              </LayoutWrapper>
+            }
+          />
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </SignedIn>
+    </>
   );
 };
 
