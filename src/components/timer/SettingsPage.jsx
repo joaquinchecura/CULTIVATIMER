@@ -1,26 +1,24 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Volume2, Bell, Monitor, Trash2, Globe, Sun, Moon, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { base44 } from "@/api/base44Client";
 import { useApp } from "@/lib/AppContext";
+import { useAuth } from "@/lib/AuthContext";
+import { useClerk } from "@clerk/clerk-react";
 
 const PULL_THRESHOLD = 72;
 
 export default function SettingsPage({ settings, onUpdate, onBack }) {
   const { lang, setLang, theme, setTheme, t } = useApp();
-  const [user, setUser] = useState(null);
+  const { user, isAuthenticated } = useAuth();
+  const { signOut } = useClerk();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [pullY, setPullY] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const touchStartY = useRef(null);
-  const scrollRef = useRef(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
+  const touchStartY = React.useRef(null);
+  const scrollRef = React.useRef(null);
 
   const handleTouchStart = (e) => {
     if (scrollRef.current?.scrollTop === 0) {
@@ -39,7 +37,6 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
   const handleTouchEnd = () => {
     if (pullY >= PULL_THRESHOLD) {
       setRefreshing(true);
-      base44.auth.me().then(setUser).catch(() => setUser(null));
       setTimeout(() => setRefreshing(false), 800);
     }
     setPullY(0);
@@ -48,6 +45,17 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
 
   const updateSetting = (key, value) => {
     onUpdate({ ...settings, [key]: value });
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      // Delete account via Clerk — requires Clerk dashboard to have "Delete account" enabled
+      await user.delete();
+    } catch (_) {
+      // Fallback: just sign out
+      await signOut({ redirectUrl: '/' });
+    }
   };
 
   const soundTypes = [
@@ -77,7 +85,6 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Pull-to-refresh indicator */}
       <AnimatePresence>
         {(pullY > 0 || refreshing) && (
           <motion.div
@@ -167,11 +174,11 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-2">
                 <p className="text-xs font-medium" style={{ color: "var(--app-text-muted)" }}>{t("sound_type")}</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {soundTypes.map((t) => (
-                    <button key={t.value} onClick={() => updateSetting("soundType", t.value)}
-                      className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${settings.soundType === t.value ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "border"}`}
-                      style={settings.soundType !== t.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
-                      {t.label}
+                  {soundTypes.map((s) => (
+                    <button key={s.value} onClick={() => updateSetting("soundType", s.value)}
+                      className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${settings.soundType === s.value ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "border"}`}
+                      style={settings.soundType !== s.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
+                      {s.label}
                     </button>
                   ))}
                 </div>
@@ -189,11 +196,11 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
             subtitle={t("buzzer_subtitle")}
           />
           <div className="mt-3 grid grid-cols-2 gap-2">
-            {buzzerTypes.map((t) => (
-              <button key={t.value} onClick={() => updateSetting("buzzerType", t.value)}
-                className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${settings.buzzerType === t.value ? "bg-amber-500/20 border border-amber-500/30 text-amber-300" : "border"}`}
-                style={settings.buzzerType !== t.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
-                {t.label}
+            {buzzerTypes.map((b) => (
+              <button key={b.value} onClick={() => updateSetting("buzzerType", b.value)}
+                className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${settings.buzzerType === b.value ? "bg-amber-500/20 border border-amber-500/30 text-amber-300" : "border"}`}
+                style={settings.buzzerType !== b.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
+                {b.label}
               </button>
             ))}
           </div>
@@ -249,7 +256,7 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
         </Section>
 
         {/* Delete Account */}
-        {user && (
+        {isAuthenticated && (
           <Section>
             <button
               onClick={() => setShowDeleteConfirm(true)}
@@ -281,19 +288,7 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
                     </button>
                     <button
                       disabled={deleting}
-                      onClick={async () => {
-                        setDeleting(true);
-                        try {
-                          // Attempt account deletion via SDK; fallback to logout
-                          if (base44.auth.deleteAccount) {
-                            await base44.auth.deleteAccount();
-                          } else {
-                            await base44.auth.logout();
-                          }
-                        } catch (_) {
-                          await base44.auth.logout();
-                        }
-                      }}
+                      onClick={handleDeleteAccount}
                       className="flex-1 min-h-[44px] rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm font-medium select-none disabled:opacity-50"
                       style={{ userSelect: "none", WebkitUserSelect: "none" }}>
                       {deleting ? "..." : t("delete")}
