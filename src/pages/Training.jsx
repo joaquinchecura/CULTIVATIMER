@@ -22,11 +22,11 @@ function useAudio(appSettings) {
     return audioCtxRef.current;
   };
 
-  const volume = (appSettings?.volume ?? 70) / 100;
+  const volume = (appSettings?.volume ?? 100) / 100;
   const soundType = appSettings?.soundType ?? "beep";
   const soundEnabled = appSettings?.soundEnabled !== false;
+  const isBreathingMode = appSettings?._mode === "breathing";
 
-  // Play a tone with given waveform params
   const playTone = useCallback((freq, duration, gainPeak, type = "sine", startDelay = 0) => {
     if (!soundEnabled) return;
     const ctx = getCtx();
@@ -40,61 +40,114 @@ function useAudio(appSettings) {
     gain.gain.setValueAtTime(gainPeak * volume, t);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
     osc.start(t);
-    osc.stop(t + duration + 0.01);
+    osc.stop(t + duration + 0.05);
   }, [soundEnabled, volume]);
 
-  // Main beep: varies by soundType
+  // Singing bowl — soft meditation sound for breathing mode
+  const playSingingBowl = useCallback((freq, duration, startDelay = 0) => {
+    if (!soundEnabled) return;
+    const ctx = getCtx();
+    const t = ctx.currentTime + startDelay;
+    // Fundamental
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1); gain1.connect(ctx.destination);
+    osc1.frequency.value = freq;
+    osc1.type = "sine";
+    gain1.gain.setValueAtTime(0, t);
+    gain1.gain.linearRampToValueAtTime(0.5 * volume, t + 0.08);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    osc1.start(t); osc1.stop(t + duration + 0.05);
+    // 2nd harmonic (softer)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2); gain2.connect(ctx.destination);
+    osc2.frequency.value = freq * 2.75;
+    osc2.type = "sine";
+    gain2.gain.setValueAtTime(0, t);
+    gain2.gain.linearRampToValueAtTime(0.15 * volume, t + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, t + duration * 0.7);
+    osc2.start(t); osc2.stop(t + duration + 0.05);
+  }, [soundEnabled, volume]);
+
   const beep = useCallback((freq = 880, duration = 0.15, count = 1) => {
     if (!soundEnabled) return;
+
+    // Breathing mode always uses soft singing bowl sounds
+    if (isBreathingMode) {
+      for (let i = 0; i < count; i++) {
+        playSingingBowl(freq * 0.5, 2.5, i * 0.6);
+      }
+      return;
+    }
+
     for (let i = 0; i < count; i++) {
-      const delay = i * 0.28;
+      const delay = i * 0.25;
       if (soundType === "beep") {
-        playTone(freq, duration, 0.5, "sine", delay);
+        // Pro gym timer: sharp, loud, clear double-click
+        playTone(1047, 0.12, 0.9, "sine", delay);
+        playTone(1047, 0.08, 0.6, "sine", delay + 0.14);
       } else if (soundType === "bell") {
-        // Bell: fundamental + harmonics, slow decay
-        playTone(freq, duration * 3, 0.4, "sine", delay);
-        playTone(freq * 2.76, duration * 2, 0.15, "sine", delay);
-        playTone(freq * 5.4, duration * 1.5, 0.08, "sine", delay);
+        // Boxing ring bell: rich, resonant
+        playTone(freq, duration * 4, 0.85, "sine", delay);
+        playTone(freq * 2.76, duration * 3, 0.3, "sine", delay);
+        playTone(freq * 5.4, duration * 2, 0.12, "sine", delay);
+        playTone(freq * 0.5, duration * 2, 0.2, "sine", delay);
       } else if (soundType === "digital") {
-        // Digital: square wave, short
-        playTone(freq, duration * 0.6, 0.35, "square", delay);
-        playTone(freq * 1.5, duration * 0.3, 0.15, "square", delay + 0.07);
+        // Strong digital blip
+        playTone(freq * 1.2, 0.08, 0.9, "square", delay);
+        playTone(freq * 0.8, 0.06, 0.5, "square", delay + 0.09);
+        playTone(freq * 1.5, 0.05, 0.3, "square", delay + 0.15);
       } else if (soundType === "soft") {
-        // Soft: triangle, longer fade
-        playTone(freq * 0.75, duration * 2.5, 0.3, "triangle", delay);
+        // Warm marimba-like tone
+        playTone(freq * 0.75, duration * 3, 0.7, "triangle", delay);
+        playTone(freq * 1.5, duration * 1.5, 0.2, "triangle", delay);
       }
     }
-  }, [soundEnabled, soundType, playTone]);
+  }, [soundEnabled, soundType, isBreathingMode, playTone, playSingingBowl]);
 
-  // Buzzer: plays at end of interval
   const buzzer = useCallback((type = null) => {
     const bType = type ?? appSettings?.buzzerType ?? "short";
     if (!soundEnabled || bType === "off") return;
-    const ctx = getCtx();
+
+    // Breathing mode: gentle bowl strike instead of buzzer
+    if (isBreathingMode) {
+      playSingingBowl(220, 3.5, 0);
+      return;
+    }
 
     if (bType === "short") {
-      playTone(220, 0.3, 0.6, "sawtooth", 0);
+      // Powerful gym buzzer
+      playTone(180, 0.15, 1.0, "sawtooth", 0);
+      playTone(160, 0.25, 0.8, "sawtooth", 0.12);
+      playTone(140, 0.2, 0.6, "sawtooth", 0.3);
     } else if (bType === "countdown") {
-      // 3 quick descending tones
-      playTone(660, 0.15, 0.5, "sine", 0);
-      playTone(550, 0.15, 0.5, "sine", 0.18);
-      playTone(440, 0.25, 0.6, "sine", 0.36);
+      // 3 loud descending beeps like a pro timer
+      playTone(880, 0.18, 0.95, "sine", 0);
+      playTone(660, 0.18, 0.95, "sine", 0.22);
+      playTone(440, 0.35, 1.0, "sine", 0.44);
     } else if (bType === "alarm") {
-      // Alternating siren
-      for (let i = 0; i < 4; i++) {
-        playTone(880, 0.15, 0.5, "sawtooth", i * 0.22);
-        playTone(660, 0.15, 0.5, "sawtooth", i * 0.22 + 0.11);
+      // Intense siren
+      for (let i = 0; i < 5; i++) {
+        playTone(960, 0.12, 0.95, "sawtooth", i * 0.2);
+        playTone(720, 0.12, 0.85, "sawtooth", i * 0.2 + 0.1);
       }
     }
-  }, [soundEnabled, appSettings?.buzzerType, playTone]);
+  }, [soundEnabled, isBreathingMode, appSettings?.buzzerType, playTone, playSingingBowl]);
 
-  // Countdown tick (last 3 seconds)
+  // Tick: last 3 seconds countdown
   const tick = useCallback(() => {
     if (!soundEnabled) return;
-    playTone(700, 0.08, 0.4, "sine", 0);
-  }, [soundEnabled, playTone]);
+    if (isBreathingMode) {
+      // Very subtle soft tick for breathing
+      playTone(528, 0.12, 0.25, "sine", 0);
+    } else {
+      // Loud clear tick
+      playTone(1200, 0.07, 0.85, "sine", 0);
+      playTone(1200, 0.05, 0.5, "sine", 0.08);
+    }
+  }, [soundEnabled, isBreathingMode, playTone]);
 
-  // Voice announcement
   const speak = useCallback((text) => {
     if (!appSettings?.voiceEnabled) return;
     if (!window.speechSynthesis) return;
@@ -102,7 +155,7 @@ function useAudio(appSettings) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = appSettings?.voiceLang === "English" ? "en-US" : "es-ES";
     utter.volume = volume;
-    utter.rate = 1;
+    utter.rate = 0.95;
     window.speechSynthesis.speak(utter);
   }, [appSettings?.voiceEnabled, appSettings?.voiceLang, volume]);
 
@@ -158,7 +211,7 @@ export default function Training() {
     soundEnabled: true,
     soundType: "beep",
     buzzerType: "short",
-    volume: 70,
+    volume: 100,
     screenFlashEnabled: false,
     screenFlashWhen: { interval: true, countdown: false }
   });
@@ -171,7 +224,7 @@ export default function Training() {
   const [hasStarted, setHasStarted] = useState(false);
 
   const intervalRef = useRef(null);
-  const { beep, buzzer, tick, speak } = useAudio(appSettings);
+  const { beep, buzzer, tick, speak } = useAudio({ ...appSettings, _mode: settings.mode });
 
   // Screen flash on phase change
   useEffect(() => {
