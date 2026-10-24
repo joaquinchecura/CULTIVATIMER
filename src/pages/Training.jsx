@@ -17,7 +17,12 @@ function useAudio(appSettings) {
 
   const getCtx = () => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || /** @type {any} */ (window).webkitAudioContext;
+      audioCtxRef.current = new AudioCtx();
+    }
+    // Reanudar el contexto si el navegador lo suspendió (política de autoplay)
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
     }
     return audioCtxRef.current;
   };
@@ -29,51 +34,58 @@ function useAudio(appSettings) {
 
   const playTone = useCallback((freq, duration, gainPeak, type = "sine", startDelay = 0) => {
     if (!soundEnabled) return;
-    const ctx = getCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = freq;
-    osc.type = type;
-    const t = ctx.currentTime + startDelay;
-    gain.gain.setValueAtTime(gainPeak * volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    osc.start(t);
-    osc.stop(t + duration + 0.05);
+    try {
+      const ctx = getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = type;
+      const t = ctx.currentTime + startDelay;
+      gain.gain.setValueAtTime(gainPeak * volume, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      osc.start(t);
+      osc.stop(t + duration + 0.05);
+    } catch (e) {
+      console.log("Audio error:", e);
+    }
   }, [soundEnabled, volume]);
 
   // Singing bowl — soft meditation sound for breathing mode
   const playSingingBowl = useCallback((freq, duration, startDelay = 0) => {
     if (!soundEnabled) return;
-    const ctx = getCtx();
-    const t = ctx.currentTime + startDelay;
-    // Fundamental
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.connect(gain1); gain1.connect(ctx.destination);
-    osc1.frequency.value = freq;
-    osc1.type = "sine";
-    gain1.gain.setValueAtTime(0, t);
-    gain1.gain.linearRampToValueAtTime(0.5 * volume, t + 0.08);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    osc1.start(t); osc1.stop(t + duration + 0.05);
-    // 2nd harmonic (softer)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.connect(gain2); gain2.connect(ctx.destination);
-    osc2.frequency.value = freq * 2.75;
-    osc2.type = "sine";
-    gain2.gain.setValueAtTime(0, t);
-    gain2.gain.linearRampToValueAtTime(0.15 * volume, t + 0.1);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, t + duration * 0.7);
-    osc2.start(t); osc2.stop(t + duration + 0.05);
+    try {
+      const ctx = getCtx();
+      const t = ctx.currentTime + startDelay;
+      // Fundamental
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1); gain1.connect(ctx.destination);
+      osc1.frequency.value = freq;
+      osc1.type = "sine";
+      gain1.gain.setValueAtTime(0, t);
+      gain1.gain.linearRampToValueAtTime(0.5 * volume, t + 0.08);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      osc1.start(t); osc1.stop(t + duration + 0.05);
+      // 2nd harmonic (softer)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2); gain2.connect(ctx.destination);
+      osc2.frequency.value = freq * 2.75;
+      osc2.type = "sine";
+      gain2.gain.setValueAtTime(0, t);
+      gain2.gain.linearRampToValueAtTime(0.15 * volume, t + 0.1);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, t + duration * 0.7);
+      osc2.start(t); osc2.stop(t + duration + 0.05);
+    } catch (e) {
+      console.log("Audio error:", e);
+    }
   }, [soundEnabled, volume]);
 
   const beep = useCallback((freq = 880, duration = 0.15, count = 1) => {
     if (!soundEnabled) return;
 
-    // Breathing mode always uses soft singing bowl sounds
     if (isBreathingMode) {
       for (let i = 0; i < count; i++) {
         playSingingBowl(freq * 0.5, 2.5, i * 0.6);
@@ -84,22 +96,18 @@ function useAudio(appSettings) {
     for (let i = 0; i < count; i++) {
       const delay = i * 0.25;
       if (soundType === "beep") {
-        // Pro gym timer: sharp, loud, clear double-click
         playTone(1047, 0.12, 0.9, "sine", delay);
         playTone(1047, 0.08, 0.6, "sine", delay + 0.14);
       } else if (soundType === "bell") {
-        // Boxing ring bell: rich, resonant
         playTone(freq, duration * 4, 0.85, "sine", delay);
         playTone(freq * 2.76, duration * 3, 0.3, "sine", delay);
         playTone(freq * 5.4, duration * 2, 0.12, "sine", delay);
         playTone(freq * 0.5, duration * 2, 0.2, "sine", delay);
       } else if (soundType === "digital") {
-        // Strong digital blip
         playTone(freq * 1.2, 0.08, 0.9, "square", delay);
         playTone(freq * 0.8, 0.06, 0.5, "square", delay + 0.09);
         playTone(freq * 1.5, 0.05, 0.3, "square", delay + 0.15);
       } else if (soundType === "soft") {
-        // Warm marimba-like tone
         playTone(freq * 0.75, duration * 3, 0.7, "triangle", delay);
         playTone(freq * 1.5, duration * 1.5, 0.2, "triangle", delay);
       }
@@ -110,24 +118,20 @@ function useAudio(appSettings) {
     const bType = type ?? appSettings?.buzzerType ?? "short";
     if (!soundEnabled || bType === "off") return;
 
-    // Breathing mode: gentle bowl strike instead of buzzer
     if (isBreathingMode) {
       playSingingBowl(220, 3.5, 0);
       return;
     }
 
     if (bType === "short") {
-      // Powerful gym buzzer
       playTone(180, 0.15, 1.0, "sawtooth", 0);
       playTone(160, 0.25, 0.8, "sawtooth", 0.12);
       playTone(140, 0.2, 0.6, "sawtooth", 0.3);
     } else if (bType === "countdown") {
-      // 3 loud descending beeps like a pro timer
       playTone(880, 0.18, 0.95, "sine", 0);
       playTone(660, 0.18, 0.95, "sine", 0.22);
       playTone(440, 0.35, 1.0, "sine", 0.44);
     } else if (bType === "alarm") {
-      // Intense siren
       for (let i = 0; i < 5; i++) {
         playTone(960, 0.12, 0.95, "sawtooth", i * 0.2);
         playTone(720, 0.12, 0.85, "sawtooth", i * 0.2 + 0.1);
@@ -135,14 +139,11 @@ function useAudio(appSettings) {
     }
   }, [soundEnabled, isBreathingMode, appSettings?.buzzerType, playTone, playSingingBowl]);
 
-  // Tick: last 3 seconds countdown
   const tick = useCallback(() => {
     if (!soundEnabled) return;
     if (isBreathingMode) {
-      // Very subtle soft tick for breathing
       playTone(528, 0.12, 0.25, "sine", 0);
     } else {
-      // Loud clear tick
       playTone(1200, 0.07, 0.85, "sine", 0);
       playTone(1200, 0.05, 0.5, "sine", 0.08);
     }
@@ -172,8 +173,6 @@ export default function Training() {
     navigate(tab === "settings" ? "/settings" : "/");
   };
 
-
-
   const [settings, setSettings] = useState(() => {
     try {
       const savedPresetName = localStorage.getItem("activePreset");
@@ -185,6 +184,7 @@ export default function Training() {
     } catch (_) {}
     return DEFAULT_SETTINGS;
   });
+
   const [presetSettings, setPresetSettings] = useState(() => {
     try {
       const saved = localStorage.getItem("timerPresetSettings");
@@ -197,14 +197,18 @@ export default function Training() {
       "Respiración": { work: 4, hold1: 4, rest: 4, hold2: 4, rounds: 10, prepare: 0, mode: "breathing" }
     };
   });
+
   const [activePreset, setActivePreset] = useState(() => {
     try { return localStorage.getItem("activePreset") || null; } catch { return null; }
   });
+  
   const [activePresetName, setActivePresetName] = useState(() => {
     try { return localStorage.getItem("activePreset") || null; } catch { return null; }
   });
+
   const [showSettings, setShowSettings] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
+  
   const [appSettings, setAppSettings] = useState({
     voiceEnabled: false,
     voiceLang: "Español",
@@ -234,15 +238,15 @@ export default function Training() {
       const t = setTimeout(() => setScreenFlash(false), 350);
       return () => clearTimeout(t);
     }
-  }, [phase]);
+  }, [phase, hasStarted, appSettings.screenFlashEnabled, appSettings.screenFlashWhen]);
 
   const totalTime =
-  phase === "prepare" ? settings.prepare :
-  phase === "work" ? settings.work :
-  phase === "hold1" ? settings.hold1 ?? 4 :
-  phase === "rest" ? settings.rest :
-  phase === "hold2" ? settings.hold2 ?? 4 :
-  0;
+    phase === "prepare" ? settings.prepare :
+    phase === "work" ? settings.work :
+    phase === "hold1" ? settings.hold1 ?? 4 :
+    phase === "rest" ? settings.rest :
+    phase === "hold2" ? settings.hold2 ?? 4 :
+    0;
 
   const handlePresetSelect = (preset) => {
     if (isRunning) return;
@@ -369,13 +373,13 @@ export default function Training() {
         speak(t("voice_inhale"));
       }
     }
-  }, [phase, currentRound, settings, beep, buzzer, speak]);
+  }, [phase, currentRound, settings, beep, buzzer, speak, t]);
 
   useEffect(() => {
     if (!isRunning) return;
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {advancePhase();return 0;}
+        if (prev <= 1) { advancePhase(); return 0; }
         if (prev <= 4) tick();
         return prev - 1;
       });
@@ -385,8 +389,9 @@ export default function Training() {
 
   const handleStart = () => {
     if (phase === "finished") {
-      resetTimer();
-      setTimeout(() => {setIsRunning(true);setHasStarted(true);}, 50);
+      resetTimer(settings);
+      setIsRunning(true);
+      setHasStarted(true);
       return;
     }
     setIsRunning(true);
@@ -403,15 +408,16 @@ export default function Training() {
     if (activePresetName) {
       const updated = { ...presetSettings, [activePresetName]: newSettings };
       setPresetSettings(updated);
-      try {localStorage.setItem("timerPresetSettings", JSON.stringify(updated));} catch (_) {}
+      try { localStorage.setItem("timerPresetSettings", JSON.stringify(updated)); } catch (_) {}
     }
     resetTimer(newSettings);
   };
 
   const totalWorkoutTime = settings.mode === "stopwatch" ? 0 :
-  settings.mode === "breathing" ?
-  settings.rounds * (settings.work + (settings.hold1 ?? 4) + settings.rest + (settings.hold2 ?? 4)) :
-  settings.prepare + settings.rounds * settings.work + (settings.rounds - 1) * settings.rest;
+    settings.mode === "breathing" ?
+    settings.rounds * (settings.work + (settings.hold1 ?? 4) + settings.rest + (settings.hold2 ?? 4)) :
+    settings.prepare + settings.rounds * settings.work + (settings.rounds - 1) * settings.rest;
+    
   const totalMin = Math.floor(totalWorkoutTime / 60);
   const totalSec = totalWorkoutTime % 60;
 
@@ -419,120 +425,174 @@ export default function Training() {
     <div className="min-h-screen" style={{ backgroundColor: "var(--app-bg)", paddingTop: "env(safe-area-inset-top)" }}>
       {/* Screen flash overlay */}
       <AnimatePresence>
-        {screenFlash &&
-        <motion.div
-          initial={{ opacity: 0.7 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-          className="fixed inset-0 bg-white z-40 pointer-events-none" />
-
-        }
+        {screenFlash && (
+          <motion.div
+            initial={{ opacity: 0.7 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="fixed inset-0 bg-white z-40 pointer-events-none" />
+        )}
       </AnimatePresence>
 
       {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[180px] opacity-20 transition-all duration-1000 ${
-        phase === "work" ? "bg-emerald-500" :
-        phase === "hold1" ? "bg-orange-500" :
-        phase === "rest" ? "bg-blue-500" :
-        phase === "hold2" ? "bg-violet-500" :
-        phase === "finished" ? "bg-purple-500" :
-        "bg-amber-500"}`
+          phase === "work" ? "bg-emerald-500" :
+          phase === "hold1" ? "bg-orange-500" :
+          phase === "rest" ? "bg-blue-500" :
+          phase === "hold2" ? "bg-violet-500" :
+          phase === "finished" ? "bg-purple-500" :
+          "bg-amber-500"}`
         } />
       </div>
 
-      {/* Tab content */}
-      <div className="relative z-10 overflow-hidden">
+           {/* Tab content */}
+           <div className="relative z-10">
         <AnimatePresence mode="wait" initial={false}>
-        {activeTab === "timer" &&
-        <motion.div
-          key="timer"
-          initial={{ x: "-100%", opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "-100%", opacity: 0 }}
-          transition={{ type: "tween", duration: 0.25 }}
-        >
-        <div className="max-w-lg mx-auto px-5 py-8 pb-28">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-              <div className="w-11 h-11" /> {/* spacer */}
-              <div className="text-center flex-1">
-                <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--app-text)" }}>{t("app_title")}</h1>
-                {settings.mode !== "stopwatch" && settings.mode !== "breathing" &&
-              <p className="mt-1 text-4xl font-mono" style={{ color: "var(--app-text-dim)" }}>
-                    {totalMin}:{String(totalSec).padStart(2, "0")}
-                  </p>
-              }
-              </div>
-              <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowSettings(!showSettings)} className="text-2xl font-extrabold rounded-xl w-11 h-11 border flex items-center justify-center transition-all select-none" style={{ background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" }}>
-                <Settings2 className="w-5 h-5" />
-              </motion.button>
-            </div>
-
-            <TimerDisplay
-            timeLeft={timeLeft}
-            totalTime={totalTime}
-            phase={phase}
-            currentRound={currentRound}
-            totalRounds={settings.rounds}
-            isRunning={isRunning}
-            mode={settings.mode} />
-          
-
-            <TimerControls
-            isRunning={isRunning}
-            hasStarted={hasStarted}
-            onStart={handleStart}
-            onPause={() => setIsRunning(false)}
-            onReset={() => resetTimer()}
-            onSkip={handleSkip}
-            phase={phase} />
-          
-
-            {!isRunning &&
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8">
-                <TimerPresets onSelect={handlePresetSelect} activePreset={activePreset} savedSettings={presetSettings} />
-              </motion.div>
-          }
-
-            <AnimatePresence>
-              {showSettings && !isRunning &&
-            <TimerSettings settings={settings} onUpdate={handleSettingsUpdate} disabled={isRunning} />
-            }
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {phase === "finished" &&
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="mt-8 text-center">
-                  <div className="inline-block bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/20 rounded-2xl px-8 py-5">
-                    <p className="text-lg font-bold" style={{ color: "var(--app-text)" }}>{t("workout_complete")}</p>
-                    <p className="text-sm mt-1" style={{ color: "var(--app-text-muted)" }}>
-                      {settings.rounds} {settings.rounds === 1 ? t("round_label") : t("rounds_label")} · {totalMin}:{String(totalSec).padStart(2, "0")} total
-                    </p>
+        {activeTab === "timer" && (
+          <motion.div
+            key="timer"
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "-100%", opacity: 0 }}
+            transition={{ type: "tween", duration: 0.25 }}
+            className="w-full"
+          >
+            {/* Contenedor principal: 1 columna en móvil, 2 columnas en desktop */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-12 pb-28 lg:h-[calc(100vh-80px)] lg:flex lg:items-center">
+              
+              <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
+                
+                {/* ================= COLUMNA IZQUIERDA (Timer) ================= */}
+                <div className="lg:col-span-7 flex flex-col items-center justify-center relative">
+                  
+                  {/* Header Móvil (Oculto en Desktop) */}
+                  <div className="w-full flex items-center justify-between mb-4 lg:hidden">
+                    <div className="w-10" /> {/* Spacer */}
+                    <div className="text-center flex-1">
+                      <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--app-text)" }}>{t("app_title")}</h1>
+                      {settings.mode !== "stopwatch" && settings.mode !== "breathing" && (
+                        <p className="text-xl font-mono" style={{ color: "var(--app-text-dim)" }}>
+                          {totalMin}:{String(totalSec).padStart(2, "0")}
+                        </p>
+                      )}
+                    </div>
+                    {/* Botón Config Móvil */}
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setShowSettings(!showSettings)} 
+                      className="rounded-xl w-10 h-10 border flex items-center justify-center transition-all select-none" 
+                      style={{ background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" }}
+                    >
+                      <Settings2 className="w-5 h-5" />
+                    </motion.button>
                   </div>
-                </motion.div>
-            }
-            </AnimatePresence>
-          </div>
-        </motion.div>
-        }
 
-        {activeTab === "settings" &&
-        <motion.div
-          key="settings"
-          initial={{ x: "100%", opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "100%", opacity: 0 }}
-          transition={{ type: "tween", duration: 0.25 }}
-        >
-          <SettingsPage settings={appSettings} onUpdate={setAppSettings} onBack={() => handleTabChange("timer")} />
-        </motion.div>
-        }
+                  {/* Timer Display (Círculo) */}
+                  <div className="w-full flex justify-center mt-4 lg:mt-0">
+                    <TimerDisplay
+                      timeLeft={timeLeft}
+                      totalTime={totalTime}
+                      phase={phase}
+                      currentRound={currentRound}
+                      totalRounds={settings.rounds}
+                      isRunning={isRunning}
+                      mode={settings.mode} 
+                    />
+                  </div>
+
+                  {/* Controles Play/Pause/Reset */}
+                  <div className="mt-8 w-full flex justify-center">
+                    <TimerControls
+                      isRunning={isRunning}
+                      hasStarted={hasStarted}
+                      onStart={handleStart}
+                      onPause={() => setIsRunning(false)}
+                      onReset={() => resetTimer()}
+                      onSkip={handleSkip}
+                      phase={phase} 
+                    />
+                  </div>
+                </div>
+
+                {/* ================= COLUMNA DERECHA (Config & Presets) ================= */}
+                <div className="lg:col-span-5 flex flex-col relative w-full">
+                  
+                  {/* Header Desktop (Fijo arriba a la derecha) */}
+                  <div className="hidden lg:flex items-center justify-between mb-8 w-full border-b pb-4" style={{ borderColor: "var(--app-border)" }}>
+                    <div>
+                      <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--app-text)" }}>{t("app_title")}</h1>
+                      {settings.mode !== "stopwatch" && settings.mode !== "breathing" && (
+                        <p className="text-lg font-mono" style={{ color: "var(--app-text-dim)" }}>
+                          Total: {totalMin}:{String(totalSec).padStart(2, "0")}
+                        </p>
+                      )}
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowSettings(!showSettings)} 
+                      className="rounded-xl w-12 h-12 border flex items-center justify-center transition-all select-none" 
+                      style={{ background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" }}
+                    >
+                      <Settings2 className="w-6 h-6" />
+                    </motion.button>
+                  </div>
+
+                  {/* Contenedor scrolleable para la configuración en Desktop */}
+                  <div className="flex-1 lg:overflow-y-auto lg:pr-2 lg:max-h-[calc(100vh-200px)] scrollbar-hide space-y-6">
+                    
+                    {/* Presets */}
+                    {!isRunning && (
+                      <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                        <TimerPresets onSelect={handlePresetSelect} activePreset={activePreset} savedSettings={presetSettings} />
+                      </motion.div>
+                    )}
+
+                    {/* Settings Panel (Ajustes de tiempos) */}
+                    <AnimatePresence>
+                      {showSettings && !isRunning && (
+                        <TimerSettings settings={settings} onUpdate={handleSettingsUpdate} disabled={isRunning} />
+                      )}
+                    </AnimatePresence>
+
+                    {/* Finished Banner */}
+                    <AnimatePresence>
+                      {phase === "finished" && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="text-center">
+                          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/20 rounded-2xl px-6 py-5 w-full">
+                            <p className="text-lg font-bold" style={{ color: "var(--app-text)" }}>{t("workout_complete")}</p>
+                            <p className="text-sm mt-1" style={{ color: "var(--app-text-muted)" }}>
+                              {settings.rounds} {settings.rounds === 1 ? t("round_label") : t("rounds_label")} · {totalMin}:{String(totalSec).padStart(2, "0")} total
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "settings" && (
+          <motion.div
+            key="settings"
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0 }}
+            transition={{ type: "tween", duration: 0.25 }}
+            className="w-full"
+          >
+            <SettingsPage settings={appSettings} onUpdate={setAppSettings} onBack={() => handleTabChange("timer")} />
+          </motion.div>
+        )}
         </AnimatePresence>
       </div>
 
       <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
-    </div>);
-
+    </div>
+  );
 }

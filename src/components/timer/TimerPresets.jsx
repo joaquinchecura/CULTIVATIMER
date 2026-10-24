@@ -25,32 +25,33 @@ export default function TimerPresets({ onSelect, activePreset, savedSettings }) 
         const s = (savedSettings && savedSettings[preset.name]) || preset;
         return (
           <motion.button
-            key={preset.name}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            onClick={() => onSelect(preset)}
-            className={`relative group rounded-2xl border p-4 text-left transition-all duration-300 ${
-              isActive
-                ? `${preset.bg} ${preset.border} border-2 shadow-lg`
-                : ""
-            }`}
-            style={!isActive ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)" } : {}}
-          >
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${preset.color}`}
-            >
-              <Icon className="w-5 h-5 text-white" />
-            </div>
-            <p className="font-semibold text-sm" style={{ color: "var(--app-text)" }}>{preset.label}</p>
-            <p className="text-xs mt-1" style={{ color: "var(--app-text-muted)" }}>
-              {preset.mode === "stopwatch"
-                ? `${s.work}s · ${s.rounds}r`
-                : preset.mode === "breathing"
-                ? `${s.work}s / ${s.hold1 ?? 4}s / ${s.rest}s / ${s.hold2 ?? 4}s`
-                : `${s.work}s / ${s.rest}s · ${s.rounds}r`}
-            </p>
-          </motion.button>
+  key={preset.name}
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: i * 0.08 }}
+  onClick={() => onSelect(preset)}
+  className={`relative group rounded-2xl border p-5 text-left transition-all duration-300 overflow-hidden ${
+    isActive ? `${preset.bg} ${preset.border} border-2 shadow-[0_0_20px_rgba(0,0,0,0.3)]` : ""
+  }`}
+  style={!isActive ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)" } : {}}
+>
+  {/* Brillo de fondo decorativo cuando está activo */}
+  {isActive && (
+    <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-40 bg-gradient-to-br ${preset.color}`} />
+  )}
+
+  <div className="relative z-10">
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br ${preset.color} shadow-lg`}>
+      <Icon className="w-6 h-6 text-white" />
+    </div>
+    <p className="font-bold text-base" style={{ color: "var(--app-text)" }}>{preset.label}</p>
+    <p className="text-xs mt-1 opacity-70" style={{ color: "var(--app-text-muted)" }}>
+      {preset.mode === "stopwatch" ? `${s.work}s · ${s.rounds}r`
+        : preset.mode === "breathing" ? `${s.work}s / ${s.hold1 ?? 4}s / ${s.rest}s / ${s.hold2 ?? 4}s`
+        : `${s.work}s / ${s.rest}s · ${s.rounds}r`}
+    </p>
+  </div>
+</motion.button>
         );
       })}
     </div>
