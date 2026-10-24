@@ -9,31 +9,24 @@ export default function NavigationTracker() {
     const { Pages, mainPage } = pagesConfig;
     const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 
-    // Log user activity when navigating to a page
     useEffect(() => {
-        // Extract page name from pathname
         const pathname = location.pathname;
         let pageName;
 
         if (pathname === '/' || pathname === '') {
             pageName = mainPageKey;
         } else {
-            // Remove leading slash and get the first segment
             const pathSegment = pathname.replace(/^\//, '').split('/')[0];
-
-            // Try case-insensitive lookup in Pages config
             const pageKeys = Object.keys(Pages);
             const matchedKey = pageKeys.find(
                 key => key.toLowerCase() === pathSegment.toLowerCase()
             );
-
             pageName = matchedKey || null;
         }
 
-        if (isAuthenticated && pageName) {
-            console.log('Page view:', pageName);
-                // Silently fail - logging shouldn't break the app
-        }
+        // Logging removed (was Base44 only)
+        // Could add analytics here in the future (e.g. Vercel Analytics, Posthog)
+
     }, [location, isAuthenticated, Pages, mainPageKey]);
 
     return null;

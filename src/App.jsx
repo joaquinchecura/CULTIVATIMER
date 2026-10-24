@@ -5,9 +5,10 @@ import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { AuthProvider } from '@/lib/AuthContext';
 import { AppProvider } from '@/lib/AppContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { useAuth } from '@/lib/AuthContext';
+import { SignedIn, SignedOut, SignIn } from '@clerk/clerk-react';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -17,11 +18,16 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+const LoginPage = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-b from-white to-slate-50">
+    <SignIn routing="hash" />
+  </div>
+);
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+const AuthenticatedApp = () => {
+  const { isLoadingAuth } = useAuth();
+
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -29,52 +35,45 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
-  }
-
-  // Render the main app
   return (
-    <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
+    <>
+      <SignedOut>
+        <LoginPage />
+      </SignedOut>
+      <SignedIn>
+        <Routes>
+          <Route path="/" element={
+            <LayoutWrapper currentPageName={mainPageKey}>
+              <MainPage />
             </LayoutWrapper>
-          }
-        />
-      ))}
-      <Route
-        path="/settings"
-        element={
-          <LayoutWrapper currentPageName="Training">
-            <Pages.Training />
-          </LayoutWrapper>
-        }
-      />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+          } />
+          {Object.entries(Pages).map(([path, Page]) => (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={
+                <LayoutWrapper currentPageName={path}>
+                  <Page />
+                </LayoutWrapper>
+              }
+            />
+          ))}
+          <Route
+            path="/settings"
+            element={
+              <LayoutWrapper currentPageName="Training">
+                <Pages.Training />
+              </LayoutWrapper>
+            }
+          />
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </SignedIn>
+    </>
   );
 };
 
-
 function App() {
-
   return (
     <AppProvider>
       <AuthProvider>
