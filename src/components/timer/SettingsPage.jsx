@@ -3,7 +3,7 @@ import { Volume2, Bell, Monitor, Trash2, Globe, Sun, Moon, ArrowLeft } from "luc
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useApp } from "@/lib/AppContext";
 
 const PULL_THRESHOLD = 72;
@@ -18,9 +18,15 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
   const touchStartY = useRef(null);
   const scrollRef = useRef(null);
 
+  const { user: authUser, logout } = useAuth();
+
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
+    if (authUser) {
+      setUser(authUser);
+    } else {
+      setUser(null);
+    }
+  }, [authUser]);
 
   const handleTouchStart = (e) => {
     if (scrollRef.current?.scrollTop === 0) {
@@ -39,7 +45,8 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
   const handleTouchEnd = () => {
     if (pullY >= PULL_THRESHOLD) {
       setRefreshing(true);
-      base44.auth.me().then(setUser).catch(() => setUser(null));
+      // Refrescar datos del usuario desde Clerk (ya está en authUser)
+      setUser(authUser || null);
       setTimeout(() => setRefreshing(false), 800);
     }
     setPullY(0);
@@ -248,7 +255,7 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
           </AnimatePresence>
         </Section>
 
-        {/* Delete Account */}
+        {/* Logout Account */}
         {user && (
           <Section>
             <button
@@ -259,17 +266,17 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
                 <Trash2 className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <p className="text-red-400 font-semibold text-sm">{t("delete_account")}</p>
-                <p className="text-xs" style={{ color: "var(--app-text-muted)" }}>{t("delete_account_subtitle")}</p>
+                <p className="text-red-400 font-semibold text-sm">{t("delete_account") || "Cerrar sesión"}</p>
+                <p className="text-xs" style={{ color: "var(--app-text-muted)" }}>{t("delete_account_subtitle") || "Salir de tu cuenta"}</p>
               </div>
             </button>
 
             <AnimatePresence>
               {showDeleteConfirm && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-sm font-semibold text-red-400 mb-1">⚠️ {t("delete_confirm")}</p>
+                  <p className="text-sm font-semibold text-red-400 mb-1">⚠️ {t("delete_confirm") || "¿Cerrar sesión?"}</p>
                   <p className="text-xs mb-3" style={{ color: "var(--app-text-muted)" }}>
-                    {t("delete_account_subtitle")}
+                    {t("delete_account_subtitle") || "Tu cuenta permanecerá activa. Para eliminarla permanentemente, contacta soporte."}
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -277,26 +284,21 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
                       disabled={deleting}
                       className="flex-1 min-h-[44px] rounded-lg border text-sm font-medium select-none"
                       style={{ background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)", userSelect: "none", WebkitUserSelect: "none" }}>
-                      {t("cancel")}
+                      {t("cancel") || "Cancelar"}
                     </button>
                     <button
                       disabled={deleting}
                       onClick={async () => {
                         setDeleting(true);
                         try {
-                          // Attempt account deletion via SDK; fallback to logout
-                          if (base44.auth.deleteAccount) {
-                            await base44.auth.deleteAccount();
-                          } else {
-                            await base44.auth.logout();
-                          }
-                        } catch (_) {
-                          await base44.auth.logout();
+                          await logout();
+                        } catch (err) {
+                          console.error("Error al cerrar sesión:", err);
                         }
                       }}
                       className="flex-1 min-h-[44px] rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm font-medium select-none disabled:opacity-50"
                       style={{ userSelect: "none", WebkitUserSelect: "none" }}>
-                      {deleting ? "..." : t("delete")}
+                      {deleting ? "..." : (t("delete") || "Salir")}
                     </button>
                   </div>
                 </motion.div>
