@@ -117,11 +117,7 @@ function useAudio(appSettings) {
       if (soundType === "beep") {
         playTone(1047, 0.12, 0.9, "sine", delay);
         playTone(1047, 0.08, 0.6, "sine", delay + 0.14);
-      } else if (soundType === "bell") {
-        playTone(freq, duration * 4, 0.85, "sine", delay);
-        playTone(freq * 2.76, duration * 3, 0.3, "sine", delay);
-        playTone(freq * 5.4, duration * 2, 0.12, "sine", delay);
-        playTone(freq * 0.5, duration * 2, 0.2, "sine", delay);
+      } else if (soundType === "bell") { playMp3("bell.mp3"); return;
       } else if (soundType === "digital") {
         playTone(freq * 1.2, 0.08, 0.9, "square", delay);
         playTone(freq * 0.8, 0.06, 0.5, "square", delay + 0.09);
@@ -153,11 +149,7 @@ function useAudio(appSettings) {
       playTone(880, 0.18, 0.95, "sine", 0);
       playTone(660, 0.18, 0.95, "sine", 0.22);
       playTone(440, 0.35, 1.0, "sine", 0.44);
-    } else if (bType === "alarm") {
-      for (let i = 0; i < 5; i++) {
-        playTone(960, 0.12, 0.95, "sawtooth", i * 0.2);
-        playTone(720, 0.12, 0.85, "sawtooth", i * 0.2 + 0.1);
-      }
+    } else if (bType === "alarm") { playMp3("alarm.mp3"); return;
     }
   }, [soundEnabled, isBreathingMode, appSettings?.buzzerType, playTone, playSingingBowl, playMp3]);
 
