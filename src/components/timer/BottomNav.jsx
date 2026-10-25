@@ -10,8 +10,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
   ];
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur-xl border-t"
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 backdrop-blur-xl border-t"
       style={{ backgroundColor: "var(--app-nav-bg)", borderColor: "var(--app-nav-border)", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex max-w-lg mx-auto">

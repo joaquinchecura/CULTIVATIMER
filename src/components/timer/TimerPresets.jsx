@@ -18,17 +18,19 @@ export default function TimerPresets({ onSelect, activePreset, savedSettings }) 
   const presets = PRESET_DEFS.map((p, i) => ({ ...p, name: PRESET_FIXED_NAMES[i], label: t(p.key) }));
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
       {presets.map((preset, i) => {
         const Icon = preset.icon;
         const isActive = activePreset === preset.name;
         const s = (savedSettings && savedSettings[preset.name]) || preset;
         return (
-          <motion.button
+<motion.button
   key={preset.name}
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
   transition={{ delay: i * 0.08 }}
+  whileHover={{ scale: 1.02, y: -2 }} // <-- Nuevo: levanta al pasar el mouse
+  whileTap={{ scale: 0.96 }}          // <-- Nuevo: hunde al hacer clic
   onClick={() => onSelect(preset)}
   className={`relative group rounded-2xl border p-5 text-left transition-all duration-300 overflow-hidden ${
     isActive ? `${preset.bg} ${preset.border} border-2 shadow-[0_0_20px_rgba(0,0,0,0.3)]` : ""
@@ -40,7 +42,7 @@ export default function TimerPresets({ onSelect, activePreset, savedSettings }) 
     <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-40 bg-gradient-to-br ${preset.color}`} />
   )}
 
-  <div className="relative z-10">
+  <div className="relative z-10 flex flex-col items-center text-center lg:items-start lg:text-left">
     <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br ${preset.color} shadow-lg`}>
       <Icon className="w-6 h-6 text-white" />
     </div>

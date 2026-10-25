@@ -1,20 +1,15 @@
 import React, { useState, useRef } from "react";
-import { Volume2, Bell, Monitor, Trash2, Globe, Sun, Moon, ArrowLeft } from "lucide-react";
+import { Volume2, Bell, Monitor, Globe, Sun, Moon, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useApp } from "@/lib/AppContext";
-import { useAuth } from "@/lib/AuthContext";
-import { useClerk } from "@clerk/clerk-react";
 
 const PULL_THRESHOLD = 72;
 
-export default function SettingsPage({ settings, onUpdate, onBack }) {
+export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
   const { lang, setLang, theme, setTheme, t } = useApp();
-  const { user, isAuthenticated } = useAuth();
-  const { signOut } = useClerk();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  
   const [pullY, setPullY] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const touchStartY = useRef(null);
@@ -45,15 +40,6 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
 
   const updateSetting = (key, value) => {
     onUpdate({ ...settings, [key]: value });
-  };
-
-  const handleDeleteAccount = async () => {
-    setDeleting(true);
-    try {
-      await user.delete();
-    } catch (_) {
-      await signOut({ redirectUrl: '/' });
-    }
   };
 
   const soundTypes = [
@@ -101,206 +87,181 @@ export default function SettingsPage({ settings, onUpdate, onBack }) {
         )}
       </AnimatePresence>
 
-      <div ref={scrollRef} className="max-w-lg mx-auto px-5 py-8 pb-28 space-y-6">
-        <div className="flex items-center gap-3 mb-2">
+      <div ref={scrollRef} className="max-w-6xl mx-auto px-5 py-8 pb-28 lg:py-12">
+        
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
           {onBack && (
             <button
               onClick={onBack}
-              className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all select-none"
+              className="w-10 h-10 rounded-xl border flex items-center justify-center transition-all select-none"
               style={{ background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)", userSelect: "none", WebkitUserSelect: "none" }}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--app-text)" }}>{t("settings")}</h1>
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: "var(--app-text)" }}>{t("settings")}</h1>
         </div>
 
-        {/* Language */}
-        <Section>
-          <SettingHeader
-            icon={<Globe className="w-5 h-5 text-sky-400" />}
-            iconBg="bg-sky-500/10"
-            title={t("language")}
-            subtitle={t("language_subtitle")}
-          />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {[{ value: "es", label: "Español" }, { value: "en", label: "English" }].map((l) => (
-              <button key={l.value} onClick={() => setLang(l.value)}
-                className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${lang === l.value ? "bg-sky-500/20 border border-sky-500/30 text-sky-300" : "border"}`}
-                style={lang !== l.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
-                {l.label}
-              </button>
-            ))}
-          </div>
-        </Section>
-
-        {/* Theme */}
-        <Section>
-          <SettingHeader
-            icon={theme === "dark" ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-400" />}
-            iconBg={theme === "dark" ? "bg-indigo-500/10" : "bg-yellow-500/10"}
-            title={t("theme")}
-            subtitle={t("theme_subtitle")}
-          />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {[{ value: "dark", label: t("theme_dark") }, { value: "light", label: t("theme_light") }].map((th) => (
-              <button key={th.value} onClick={() => setTheme(th.value)}
-                className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${theme === th.value ? "bg-indigo-500/20 border border-indigo-500/30 text-indigo-300" : "border"}`}
-                style={theme !== th.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
-                {th.label}
-              </button>
-            ))}
-          </div>
-        </Section>
-
-        {/* Sound */}
-        <Section>
-          <SettingHeader
-            icon={<Volume2 className="w-5 h-5 text-emerald-400" />}
-            iconBg="bg-emerald-500/10"
-            title={t("sound")}
-            subtitle={t("sound_subtitle")}
-            toggle={
-              <Switch
-                checked={settings.soundEnabled}
-                onCheckedChange={(v) => updateSetting("soundEnabled", v)}
+        {/* Grid de Configuración de 2 Columnas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+          
+          {/* ================= COLUMNA IZQUIERDA (App & Visual) ================= */}
+          <div className="space-y-6">
+            
+            {/* Language */}
+            <Section>
+              <SettingHeader
+                icon={<Globe className="w-5 h-5 text-sky-400" />}
+                iconBg="bg-sky-500/10"
+                title={t("language")}
+                subtitle={t("language_subtitle")}
               />
-            }
-          />
-          <AnimatePresence>
-            {settings.soundEnabled && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-2">
-                <p className="text-xs font-medium" style={{ color: "var(--app-text-muted)" }}>{t("sound_type")}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {soundTypes.map((s) => (
-                    <button key={s.value} onClick={() => updateSetting("soundType", s.value)}
-                      className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${settings.soundType === s.value ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-300" : "border"}`}
-                      style={settings.soundType !== s.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Section>
-
-        {/* Buzzer */}
-        <Section>
-          <SettingHeader
-            icon={<Bell className="w-5 h-5 text-amber-400" />}
-            iconBg="bg-amber-500/10"
-            title={t("buzzer")}
-            subtitle={t("buzzer_subtitle")}
-          />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {buzzerTypes.map((b) => (
-              <button key={b.value} onClick={() => updateSetting("buzzerType", b.value)}
-                className={`min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium transition-all select-none ${settings.buzzerType === b.value ? "bg-amber-500/20 border border-amber-500/30 text-amber-300" : "border"}`}
-                style={settings.buzzerType !== b.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
-                {b.label}
-              </button>
-            ))}
-          </div>
-        </Section>
-
-        {/* Volume */}
-        <Section>
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-              <Volume2 className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm" style={{ color: "var(--app-text)" }}>{t("volume")}</p>
-              <p className="text-xs" style={{ color: "var(--app-text-muted)" }}>{t("volume_subtitle")}</p>
-            </div>
-            <span className="font-mono text-sm" style={{ color: "var(--app-text)" }}>{settings.volume}%</span>
-          </div>
-          <div className="mt-4">
-            <Slider value={[settings.volume]} onValueChange={(v) => updateSetting("volume", v[0])} max={100} step={5} className="w-full" />
-          </div>
-        </Section>
-
-        {/* Screen Flash */}
-        <Section>
-          <SettingHeader
-            icon={<Monitor className="w-5 h-5 text-cyan-400" />}
-            iconBg="bg-cyan-500/10"
-            title={t("screen_flash")}
-            subtitle={t("screen_flash_subtitle")}
-            toggle={
-              <Switch
-                checked={settings.screenFlashEnabled}
-                onCheckedChange={(v) => updateSetting("screenFlashEnabled", v)}
-              />
-            }
-          />
-          <AnimatePresence>
-            {settings.screenFlashEnabled && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 space-y-2">
-                <p className="text-xs font-medium" style={{ color: "var(--app-text-muted)" }}>{t("activate_on")}</p>
-                {screenFlashWhen.map((w) => (
-                  <label key={w.value} className="flex items-center gap-3 min-h-[44px] p-3 rounded-lg border transition-all cursor-pointer select-none" style={{ background: "var(--app-surface)", borderColor: "var(--app-border)" }}>
-                    <Switch
-                      checked={settings.screenFlashWhen?.[w.value] || false}
-                      onCheckedChange={(v) => updateSetting("screenFlashWhen", { ...settings.screenFlashWhen, [w.value]: v })}
-                    />
-                    <span className="text-sm" style={{ color: "var(--app-text)" }}>{w.label}</span>
-                  </label>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {[{ value: "es", label: "Español" }, { value: "en", label: "English" }].map((l) => (
+                  <button key={l.value} onClick={() => setLang(l.value)}
+                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${lang === l.value ? "bg-sky-500/20 border-2 border-sky-500/50 text-sky-300" : "border"}`}
+                    style={lang !== l.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
+                    {l.label}
+                  </button>
                 ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Section>
-
-        {/* Logout / Delete Account */}
-        {isAuthenticated && (
-          <Section>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="w-full min-h-[44px] flex items-center gap-3 text-left select-none"
-            >
-              <div className="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5 text-red-400" />
               </div>
-              <div>
-                <p className="text-red-400 font-semibold text-sm">{t("delete_account") || "Cerrar sesión"}</p>
-                <p className="text-xs" style={{ color: "var(--app-text-muted)" }}>{t("delete_account_subtitle") || "Salir de tu cuenta"}</p>
-              </div>
-            </button>
+            </Section>
 
-            <AnimatePresence>
-              {showDeleteConfirm && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-sm font-semibold text-red-400 mb-1">⚠️ {t("delete_confirm") || "¿Cerrar sesión?"}</p>
-                  <p className="text-xs mb-3" style={{ color: "var(--app-text-muted)" }}>
-                    {t("delete_account_subtitle") || "Tu cuenta permanecerá activa. Para eliminarla permanentemente, contacta soporte."}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowDeleteConfirm(false)}
-                      disabled={deleting}
-                      className="flex-1 min-h-[44px] rounded-lg border text-sm font-medium select-none"
-                      style={{ background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)", userSelect: "none", WebkitUserSelect: "none" }}>
-                      {t("cancel") || "Cancelar"}
-                    </button>
-                    <button
-                      disabled={deleting}
-                      onClick={handleDeleteAccount}
-                      className="flex-1 min-h-[44px] rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm font-medium select-none disabled:opacity-50"
-                      style={{ userSelect: "none", WebkitUserSelect: "none" }}>
-                      {deleting ? "..." : (t("delete") || "Salir")}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Section>
-        )}
+            {/* Theme */}
+            <Section>
+              <SettingHeader
+                icon={theme === "dark" ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-400" />}
+                iconBg={theme === "dark" ? "bg-indigo-500/10" : "bg-yellow-500/10"}
+                title={t("theme")}
+                subtitle={t("theme_subtitle")}
+              />
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {[{ value: "dark", label: t("theme_dark") }, { value: "light", label: t("theme_light") }].map((th) => (
+                  <button key={th.value} onClick={() => setTheme(th.value)}
+                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${theme === th.value ? "bg-indigo-500/20 border-2 border-indigo-500/50 text-indigo-300" : "border"}`}
+                    style={theme !== th.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
+                    {th.label}
+                  </button>
+                ))}
+              </div>
+            </Section>
+
+            {/* Screen Flash */}
+            <Section>
+              <SettingHeader
+                icon={<Monitor className="w-5 h-5 text-cyan-400" />}
+                iconBg="bg-cyan-500/10"
+                title={t("screen_flash")}
+                subtitle={t("screen_flash_subtitle")}
+                toggle={
+                  <Switch
+                    checked={settings?.screenFlashEnabled || false}
+                    onCheckedChange={(v) => updateSetting("screenFlashEnabled", v)}
+                  />
+                }
+              />
+              <AnimatePresence>
+                {settings?.screenFlashEnabled && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 space-y-3 overflow-hidden">
+                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--app-text-muted)" }}>{t("activate_on")}</p>
+                    <div className="space-y-2">
+                      {screenFlashWhen.map((w) => (
+                        <label key={w.value} className="flex items-center gap-3 min-h-[48px] p-3 rounded-xl border transition-all cursor-pointer select-none" style={{ background: "var(--app-surface)", borderColor: "var(--app-border)" }}>
+                          <Switch
+                            checked={settings.screenFlashWhen?.[w.value] || false}
+                            onCheckedChange={(v) => updateSetting("screenFlashWhen", { ...settings.screenFlashWhen, [w.value]: v })}
+                          />
+                          <span className="text-sm font-medium" style={{ color: "var(--app-text)" }}>{w.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Section>
+
+          </div>
+
+          {/* ================= COLUMNA DERECHA (Audio) ================= */}
+          <div className="space-y-6">
+            
+            {/* Sound */}
+            <Section>
+              <SettingHeader
+                icon={<Volume2 className="w-5 h-5 text-emerald-400" />}
+                iconBg="bg-emerald-500/10"
+                title={t("sound")}
+                subtitle={t("sound_subtitle")}
+                toggle={
+                  <Switch
+                    checked={settings?.soundEnabled || false}
+                    onCheckedChange={(v) => updateSetting("soundEnabled", v)}
+                  />
+                }
+              />
+              <AnimatePresence>
+                {settings?.soundEnabled && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 space-y-3 overflow-hidden">
+                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--app-text-muted)" }}>{t("sound_type")}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {soundTypes.map((s) => (
+                        <button key={s.value} onClick={() => updateSetting("soundType", s.value)}
+                          className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${settings.soundType === s.value ? "bg-emerald-500/20 border-2 border-emerald-500/50 text-emerald-300" : "border"}`}
+                          style={settings.soundType !== s.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Section>
+
+            {/* Buzzer */}
+            <Section>
+              <SettingHeader
+                icon={<Bell className="w-5 h-5 text-amber-400" />}
+                iconBg="bg-amber-500/10"
+                title={t("buzzer")}
+                subtitle={t("buzzer_subtitle")}
+              />
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {buzzerTypes.map((b) => (
+                  <button key={b.value} onClick={() => updateSetting("buzzerType", b.value)}
+                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${settings.buzzerType === b.value ? "bg-amber-500/20 border-2 border-amber-500/50 text-amber-300" : "border"}`}
+                    style={settings.buzzerType !== b.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+            </Section>
+
+            {/* Volume */}
+            <Section>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <Volume2 className="w-6 h-6 text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm" style={{ color: "var(--app-text)" }}>{t("volume")}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--app-text-muted)" }}>{t("volume_subtitle")}</p>
+                </div>
+                <span className="font-mono text-lg font-bold" style={{ color: "var(--app-text)" }}>{settings?.volume ?? 100}%</span>
+              </div>
+              <div className="mt-5">
+                <Slider value={[settings?.volume ?? 100]} onValueChange={(v) => updateSetting("volume", v[0])} max={100} step={5} className="w-full" />
+              </div>
+            </Section>
+
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
+// --- COMPONENTES AUXILIARES ---
 
 function Section({ children }) {
   return (
