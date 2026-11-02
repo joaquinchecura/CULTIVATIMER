@@ -81,7 +81,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             <motion.div
               animate={refreshing ? { rotate: 360 } : { rotate: pullY * 3 }}
               transition={refreshing ? { repeat: Infinity, duration: 0.6, ease: "linear" } : {}}
-              className="w-6 h-6 border-2 border-white/20 border-t-white/70 rounded-full"
+              className="w-6 h-6 border-2 border-slate-300 border-t-slate-700 dark:border-white/20 dark:border-t-white/70 rounded-full"
             />
           </motion.div>
         )}
@@ -112,7 +112,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             {/* Language */}
             <Section>
               <SettingHeader
-                icon={<Globe className="w-5 h-5 text-sky-400" />}
+                icon={<Globe className="w-5 h-5 text-sky-600 dark:text-sky-400" />}
                 iconBg="bg-sky-500/10"
                 title={t("language")}
                 subtitle={t("language_subtitle")}
@@ -120,7 +120,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {[{ value: "es", label: "Español" }, { value: "en", label: "English" }].map((l) => (
                   <button key={l.value} onClick={() => setLang(l.value)}
-                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${lang === l.value ? "bg-sky-500/20 border-2 border-sky-500/50 text-sky-300" : "border"}`}
+                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${lang === l.value ? "bg-sky-500/20 border-2 border-sky-500/60 text-sky-800 dark:text-sky-300" : "border"}`}
                     style={lang !== l.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
                     {l.label}
                   </button>
@@ -131,7 +131,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             {/* Theme */}
             <Section>
               <SettingHeader
-                icon={theme === "dark" ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-400" />}
+                icon={theme === "dark" ? <Moon className="w-5 h-5 text-indigo-400" /> : <Sun className="w-5 h-5 text-yellow-600" />}
                 iconBg={theme === "dark" ? "bg-indigo-500/10" : "bg-yellow-500/10"}
                 title={t("theme")}
                 subtitle={t("theme_subtitle")}
@@ -139,7 +139,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {[{ value: "dark", label: t("theme_dark") }, { value: "light", label: t("theme_light") }].map((th) => (
                   <button key={th.value} onClick={() => setTheme(th.value)}
-                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${theme === th.value ? "bg-indigo-500/20 border-2 border-indigo-500/50 text-indigo-300" : "border"}`}
+                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${theme === th.value ? "bg-indigo-500/20 border-2 border-indigo-500/60 text-indigo-800 dark:text-indigo-300" : "border"}`}
                     style={theme !== th.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
                     {th.label}
                   </button>
@@ -150,7 +150,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             {/* Screen Flash */}
             <Section>
               <SettingHeader
-                icon={<Monitor className="w-5 h-5 text-cyan-400" />}
+                icon={<Monitor className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
                 iconBg="bg-cyan-500/10"
                 title={t("screen_flash")}
                 subtitle={t("screen_flash_subtitle")}
@@ -189,7 +189,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             {/* Sound */}
             <Section>
               <SettingHeader
-                icon={<Volume2 className="w-5 h-5 text-emerald-400" />}
+                icon={<Volume2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
                 iconBg="bg-emerald-500/10"
                 title={t("sound")}
                 subtitle={t("sound_subtitle")}
@@ -207,7 +207,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
                     <div className="grid grid-cols-2 gap-3">
                       {soundTypes.map((s) => (
                         <button key={s.value} onClick={() => updateSetting("soundType", s.value)}
-                          className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${settings.soundType === s.value ? "bg-emerald-500/20 border-2 border-emerald-500/50 text-emerald-300" : "border"}`}
+                          className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${settings.soundType === s.value ? "bg-emerald-500/20 border-2 border-emerald-500/60 text-emerald-800 dark:text-emerald-300" : "border"}`}
                           style={settings.soundType !== s.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
                           {s.label}
                         </button>
@@ -221,7 +221,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             {/* Buzzer */}
             <Section>
               <SettingHeader
-                icon={<Bell className="w-5 h-5 text-amber-400" />}
+                icon={<Bell className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
                 iconBg="bg-amber-500/10"
                 title={t("buzzer")}
                 subtitle={t("buzzer_subtitle")}
@@ -229,7 +229,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {buzzerTypes.map((b) => (
                   <button key={b.value} onClick={() => updateSetting("buzzerType", b.value)}
-                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${settings.buzzerType === b.value ? "bg-amber-500/20 border-2 border-amber-500/50 text-amber-300" : "border"}`}
+                    className={`min-h-[48px] px-3 py-2 rounded-xl text-sm font-semibold transition-all select-none ${settings.buzzerType === b.value ? "bg-amber-500/20 border-2 border-amber-500/60 text-amber-900 dark:text-amber-300" : "border"}`}
                     style={settings.buzzerType !== b.value ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-btn-text)" } : {}}>
                     {b.label}
                   </button>
@@ -241,7 +241,7 @@ export default function SettingsPage({ settings = {}, onUpdate, onBack }) {
             <Section>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-                  <Volume2 className="w-6 h-6 text-purple-400" />
+                  <Volume2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm" style={{ color: "var(--app-text)" }}>{t("volume")}</p>

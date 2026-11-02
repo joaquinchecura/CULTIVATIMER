@@ -42,12 +42,12 @@ export default function TimerPresets({ onSelect, activePreset, savedSettings }) 
     <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-40 bg-gradient-to-br ${preset.color}`} />
   )}
 
-  <div className="relative z-10 flex flex-col items-center text-center lg:items-start lg:text-left">
+<div className="relative z-10 flex flex-col items-center justify-center text-center h-full">
     <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-gradient-to-br ${preset.color} shadow-lg`}>
       <Icon className="w-6 h-6 text-white" />
     </div>
     <p className="font-bold text-base" style={{ color: "var(--app-text)" }}>{preset.label}</p>
-    <p className="text-xs mt-1 opacity-70" style={{ color: "var(--app-text-muted)" }}>
+    <p className="text-xs mt-1" style={{ color: "var(--app-text-muted)" }}>
       {preset.mode === "stopwatch" ? `${s.work}s · ${s.rounds}r`
         : preset.mode === "breathing" ? `${s.work}s / ${s.hold1 ?? 4}s / ${s.rest}s / ${s.hold2 ?? 4}s`
         : `${s.work}s / ${s.rest}s · ${s.rounds}r`}

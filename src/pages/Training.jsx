@@ -239,16 +239,27 @@ export default function Training() {
     }
   };
 
-  const [appSettings, setAppSettings] = useState({
-    voiceEnabled: false,
-    voiceLang: "Español",
-    soundEnabled: true,
-    soundType: "beep",
-    buzzerType: "short",
-    volume: 100,
-    screenFlashEnabled: false,
-    screenFlashWhen: { interval: true, countdown: false }
+  const [appSettings, setAppSettings] = useState(() => {
+    const defaults = {
+      voiceEnabled: false,
+      voiceLang: "Español",
+      soundEnabled: true,
+      soundType: "bell",
+      buzzerType: "alarm",
+      volume: 100,
+      screenFlashEnabled: false,
+      screenFlashWhen: { interval: true, countdown: false }
+    };
+    try {
+      const saved = localStorage.getItem("appSettings");
+      if (saved) return { ...defaults, ...JSON.parse(saved) };
+    } catch (_) {}
+    return defaults;
   });
+  
+  useEffect(() => {
+    try { localStorage.setItem("appSettings", JSON.stringify(appSettings)); } catch (_) {}
+  }, [appSettings]);
 
   const [phase, setPhase] = useState("prepare");
   const [timeLeft, setTimeLeft] = useState(DEFAULT_SETTINGS.prepare);
@@ -479,7 +490,7 @@ export default function Training() {
           <motion.div
             initial={{ opacity: 0.7 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
-            className="fixed inset-0 bg-white z-40 pointer-events-none" />
+            className="fixed inset-0 bg-slate-900 dark:bg-white z-40 pointer-events-none" />
         )}
       </AnimatePresence>
 
@@ -599,17 +610,20 @@ export default function Training() {
                         const isActive = activeTab === id;
                         return (
                           <button
-                            key={id}
-                            onClick={() => handleTabChange(id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                              isActive 
-                                ? "bg-white/10 text-white" 
-                                : "text-gray-400 hover:text-white hover:bg-white/5"
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                            {label}
-                          </button>
+                          key={id}
+                          onClick={() => handleTabChange(id)}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                            isActive ? "" : "opacity-70 hover:opacity-100"
+                          }`}
+                          style={{
+                            color: isActive ? "var(--app-text)" : "var(--app-text-dim)",
+                            background: isActive ? "var(--app-btn-bg)" : "transparent",
+                            borderColor: isActive ? "var(--app-btn-border)" : "transparent",
+                          }}
+                        >
+                          <Icon className="w-4 h-4" />
+                          {label}
+                        </button>
                         );
                       })}
                     </div>

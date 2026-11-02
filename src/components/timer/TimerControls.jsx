@@ -25,19 +25,19 @@ export default function TimerControls({
 
       {/* Play / Pause */}
       <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={isRunning ? onPause : onStart}
-        className={`w-20 h-20 rounded-3xl flex items-center justify-center text-white shadow-2xl transition-all select-none ${
-          isRunning
-            ? "bg-white/15 backdrop-blur-sm border border-white/20"
-            : "bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500"
-        }`}
-        style={
-          !isRunning
-            ? { boxShadow: "0 8px 32px rgba(34,197,94,0.3)", userSelect: "none", WebkitUserSelect: "none" }
-            : { userSelect: "none", WebkitUserSelect: "none" }
-        }
-      >
+  whileTap={{ scale: 0.9 }}
+  onClick={isRunning ? onPause : onStart}
+  className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl transition-all select-none ${
+    isRunning
+      ? "border backdrop-blur-sm"
+      : "text-white bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500"
+  }`}
+  style={
+    isRunning
+      ? { background: "var(--app-btn-bg)", borderColor: "var(--app-btn-border)", color: "var(--app-text)", userSelect: "none", WebkitUserSelect: "none" }
+      : { boxShadow: "0 8px 32px rgba(34,197,94,0.3)", userSelect: "none", WebkitUserSelect: "none" }
+  }
+>
         {isRunning ? (
           <Pause className="w-7 h-7" />
         ) : (

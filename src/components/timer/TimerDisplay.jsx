@@ -23,12 +23,12 @@ export default function TimerDisplay({
   const isBreathing = mode === "breathing";
 
   const phaseColors = {
-    work: { stroke: isBreathing ? "#ef4444" : "#22c55e", glow: isBreathing ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)", label: isBreathing ? t("phase_inhale") : t("phase_work"), text: isBreathing ? "text-red-400" : "text-emerald-400" },
-    hold1: { stroke: "#f97316", glow: "rgba(249,115,22,0.4)", label: t("phase_hold"), text: "text-orange-400" },
-    rest: { stroke: "#3b82f6", glow: "rgba(59,130,246,0.4)", label: isBreathing ? t("phase_exhale") : t("phase_rest"), text: "text-blue-400" },
-    hold2: { stroke: "#8b5cf6", glow: "rgba(139,92,246,0.4)", label: t("phase_hold"), text: "text-violet-400" },
-    prepare: { stroke: "#f59e0b", glow: "rgba(245,158,11,0.4)", label: t("phase_prepare"), text: "text-amber-400" },
-    finished: { stroke: "#a855f7", glow: "rgba(168,85,247,0.4)", label: t("phase_finished"), text: "text-purple-400" }
+    work: { stroke: isBreathing ? "#ef4444" : "#22c55e", glow: isBreathing ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)", label: isBreathing ? t("phase_inhale") : t("phase_work"), text: isBreathing ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400" },
+    hold1: { stroke: "#f97316", glow: "rgba(249,115,22,0.4)", label: t("phase_hold"), text: "text-orange-600 dark:text-orange-400" },
+    rest: { stroke: "#3b82f6", glow: "rgba(59,130,246,0.4)", label: isBreathing ? t("phase_exhale") : t("phase_rest"), text: "text-blue-600 dark:text-blue-400" },
+    hold2: { stroke: "#8b5cf6", glow: "rgba(139,92,246,0.4)", label: t("phase_hold"), text: "text-violet-600 dark:text-violet-400" },
+    prepare: { stroke: "#f59e0b", glow: "rgba(245,158,11,0.4)", label: t("phase_prepare"), text: "text-amber-700 dark:text-amber-400" },
+    finished: { stroke: "#a855f7", glow: "rgba(168,85,247,0.4)", label: t("phase_finished"), text: "text-purple-600 dark:text-purple-400" }
   };
 
   const current = phaseColors[phase] || phaseColors.prepare;
@@ -41,7 +41,7 @@ export default function TimerDisplay({
       <div className="relative w-[300px] h-[300px] sm:w-[360px] sm:h-[360px] lg:w-[420px] lg:h-[420px]">
         
         <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 320 320">
-          <circle cx="160" cy="160" r={radius} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="12" />
+         <circle cx="160" cy="160" r={radius} fill="none" strokeWidth="12" style={{ stroke: "var(--app-border)" }} />
           
           <motion.circle
             cx="160" cy="160" r={radius} fill="none"
@@ -64,11 +64,13 @@ export default function TimerDisplay({
               const isCurrent = i === currentRound && phase !== "finished";
               return (
                 <circle
-                  key={i} cx={cx} cy={cy}
-                  r={isCurrent ? 6 : 4}
-                  fill={isDone ? "#22c55e" : isCurrent ? "white" : "rgba(255,255,255,0.1)"}
-                  style={{ transition: "fill 0.3s, r 0.3s" }}
-                />
+                key={i} cx={cx} cy={cy}
+                r={isCurrent ? 6 : 4}
+                style={{
+                  fill: isDone ? "#22c55e" : isCurrent ? "var(--app-text)" : "var(--app-border)",
+                  transition: "fill 0.3s, r 0.3s",
+                }}
+              />
               );
             })}
           </svg>
